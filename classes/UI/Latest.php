@@ -97,10 +97,25 @@ class Latest {
           <h2><?= Value::formatPercentage($datum->gasConsumption->getTotal() / $demand) ?>% gas consumption</h2>
 <?php
 
+    $gasNote = '<p>Note: Gas consumption data integration is in progress. '
+      . 'Values shown may be estimates or placeholders.</p>';
+
     self::outputTable($datum->gasConsumption, [
-      \KateMorley\Grid\State\GasConsumption::DOMESTIC   => '<p>Domestic gas consumption includes natural gas used in homes for heating, cooking, and hot water. Gas consumption is tracked separately from gas-fired electricity generation to avoid double-counting.</p><p>Note: Gas consumption data integration is in progress. Values shown may be estimates or placeholders.</p>',
-      \KateMorley\Grid\State\GasConsumption::INDUSTRIAL => '<p>Industrial gas consumption includes natural gas used in manufacturing, processing, and other industrial applications. This is separate from gas used to generate electricity.</p><p>Note: Gas consumption data integration is in progress. Values shown may be estimates or placeholders.</p>',
-      \KateMorley\Grid\State\GasConsumption::COMMERCIAL => '<p>Commercial gas consumption includes natural gas used in commercial buildings, offices, and other business premises. This is separate from gas used to generate electricity.</p><p>Note: Gas consumption data integration is in progress. Values shown may be estimates or placeholders.</p>'
+      \KateMorley\Grid\State\GasConsumption::DOMESTIC   =>
+        '<p>Domestic gas consumption includes natural gas used in homes for '
+        . 'heating, cooking, and hot water. Gas consumption is tracked separately '
+        . 'from gas-fired electricity generation to avoid double-counting.</p>'
+        . $gasNote,
+      \KateMorley\Grid\State\GasConsumption::INDUSTRIAL =>
+        '<p>Industrial gas consumption includes natural gas used in '
+        . 'manufacturing, processing, and other industrial applications. '
+        . 'This is separate from gas used to generate electricity.</p>'
+        . $gasNote,
+      \KateMorley\Grid\State\GasConsumption::COMMERCIAL =>
+        '<p>Commercial gas consumption includes natural gas used in commercial '
+        . 'buildings, offices, and other business premises. This is separate from '
+        . 'gas used to generate electricity.</p>'
+        . $gasNote
     ], $demand);
 
 ?>
