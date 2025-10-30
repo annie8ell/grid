@@ -134,16 +134,33 @@ PHP class: [Emissions](classes/Data/Emissions.php)
 
 ### Gas Consumption Data
 
-#### Gas Data Sources (To Be Integrated)
+#### Gas Data Sources (Validated, Awaiting Integration)
 
-Gas consumption data infrastructure has been added to the database schema and backend, ready for integration with:
-- [National Gas](https://www.nationalgas.com/) or [National Gas Data Portal](https://data.nationalgas.com/)
-- [NESO Data Portal](https://www.neso.energy/data-portal) (Gas Demand)
-- [DESNZ Energy Trends](https://www.gov.uk/government/organisations/department-for-energy-security-and-net-zero)
+Gas consumption data infrastructure has been added to the database schema and backend. Data sources have been evaluated and validated:
 
-The database schema now includes columns for `domestic_gas`, `industrial_gas`, and `commercial_gas` across all time-series tables. Gas consumption is tracked separately from gas-fired electricity generation (CCGT/OCGT) to prevent double-counting.
+**Recommended Source: [NESO Data Portal](https://www.neso.energy/data-portal)**
+- API-based access via https://api.neso.energy/
+- CSV format, similar to electricity data sources
+- Most compatible with existing infrastructure
+- **Status**: Requires manual research to identify specific gas demand dataset IDs
+- **Action Required**: Visit the NESO portal to locate gas demand datasets
 
-PHP class: [GasConsumption](classes/Data/GasConsumption.php) (placeholder implementation)
+**Alternative Sources Evaluated:**
+- [National Gas Data Portal](https://data.nationalgas.com/) - Download-based, limited API access
+- [DESNZ Energy Trends](https://www.gov.uk/government/statistics/gas-section-4-energy-trends) - Best sector breakdown, but monthly/quarterly updates (too slow for real-time)
+
+**Data Characteristics:**
+- Format: CSV with settlement date/period structure (expected)
+- Units: GWh (convert to GW for consistency with electricity)
+- Sectors: Domestic, Industrial, Commercial (if available; may require estimation)
+- Granularity: Target 30-minute to match electricity data
+
+**Validation:**
+Run `php validate_gas_sources.php` to test data source connectivity and review implementation checklist.
+
+The database schema includes columns for `domestic_gas`, `industrial_gas`, and `commercial_gas` across all time-series tables. Gas consumption is tracked separately from gas-fired electricity generation (CCGT/OCGT) to prevent double-counting.
+
+PHP class: [GasConsumption](classes/Data/GasConsumption.php) (validated, ready for data source configuration)
 
 ## Future plans
 
