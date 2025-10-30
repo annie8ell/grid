@@ -4,11 +4,21 @@ This repository contains the source code for [National Grid: Live](https://grid.
 
 ## Overview
 
-This project tracks overall energy provision and consumption for the UK, including:
-- **Electricity generation** by type (coal, gas, nuclear, renewables, etc.)
-- **Direct gas consumption** by sector (domestic, industrial, commercial)
+This project tracks overall energy provision and consumption for the UK, providing real-time and historical data on:
 
-Gas consumption data is tracked separately from gas-fired electricity generation to avoid double-counting.
+### Electricity Tracking
+- **Electricity generation by type**: coal, CCGT (combined cycle gas turbine), OCGT (open cycle gas turbine), nuclear, oil, wind, hydro, pumped storage, biomass, battery, and other sources
+- **Embedded generation**: solar and wind power connected to the local distribution network (rather than the national transmission network)
+- **Interconnector imports/exports**: IFA, Moyle, BritNed, EWIC, Nemo, IFA2, NSL, ElecLink, Viking, and Greenlink
+- **Electricity pricing**: wholesale electricity prices from the APX spot market
+- **Carbon emissions**: carbon intensity of electricity generation in grams of CO₂ per kilowatt-hour
+
+### Gas Consumption Tracking
+- **Direct gas consumption by sector**: domestic (heating, cooking), industrial, and commercial
+- Gas consumption is tracked separately from gas-fired electricity generation (CCGT/OCGT) to avoid double-counting
+
+### Data Updates
+The application updates every 5 minutes via a cron job running `update.php`, fetching the latest data from multiple sources and aggregating it across different time periods.
 
 ## Development
 
@@ -49,6 +59,22 @@ Upload `.env`, `update.php`, and the `classes` and `public` directories to the s
 ### Database
 
 Create a database and a user with `SELECT`, `INSERT`, `UPDATE`, and `DELETE` privileges, and import `grid.sql` into the database.
+
+#### Database Schema
+
+The database stores time-series data in 5 tables with different granularities:
+- `past_five_minutes` - 5-minute electricity generation data
+- `past_half_hours` - 30-minute data (electricity generation, embedded generation, emissions, pricing, gas consumption)
+- `past_days` - Daily aggregated data
+- `past_weeks` - Weekly aggregated data
+- `past_years` - Yearly aggregated data
+
+Each table includes columns for:
+- Electricity generation by type (coal, CCGT, OCGT, nuclear, oil, wind, hydro, pumped storage, biomass, battery, other)
+- Embedded generation (solar and wind)
+- Interconnector transfers (IFA, Moyle, BritNed, EWIC, Nemo, IFA2, NSL, ElecLink, Viking, Greenlink)
+- Gas consumption by sector (domestic, industrial, commercial)
+- Pricing and emissions data (where applicable)
 
 ### Web server
 
