@@ -1,0 +1,128 @@
+name: Deploy to Azure
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  AZURE_WEBAPP_NAME: nationalgrid-live    # Set this to your application's name
+  PHP_VERSION: '8.3'
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to Azure
+    runs-on: ubuntu-latest
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+      
+      - name: Validate PHP files
+        run: |
+          find classes -name "*.php" -exec php -l {} \;
+          php -l update.php
+      
+      - name: Create deployment package
+        run: |
+          mkdir -p deploy
+          cp -r classes deploy/
+          cp -r public deploy/
+          cp update.php deploy/
+          cp validate_gas_sources.php deploy/
+          cp .env.example deploy/.env.example
+          
+          # Create startup script for Azure
+          cat > deploy/startup.sh << 'EOF'
+          #!/bin/bash
+          # Azure App Service startup script
+          cd /home/site/wwwroot
+          
+          # Ensure environment variables are set
+          if [ -z "$DATABASE_HOSTNAME" ]; then
+            echo "ERROR: DATABASE_HOSTNAME not set"
+            exit 1
+          fi
+          
+          # Run initial update
+          php update.php
+          
+          echo "Startup complete"
+          EOF
+          
+          chmod +x deploy/startup.sh
+      
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: ${{ env.AZURE_WEBAPP_NAME }}
+          package: ./deploy
+      
+      - name: Configure App Settings
+        run: |
+          az webapp config appsettings set \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --settings \
+              DATABASE_HOSTNAME="${{ secrets.DATABASE_HOSTNAME }}" \
+              DATABASE_USERNAME="${{ secrets.DATABASE_USERNAME }}" \
+              DATABASE_PASSWORD="${{ secrets.DATABASE_PASSWORD }}" \
+              DATABASE_DATABASE="${{ secrets.DATABASE_DATABASE }}" \
+              ERROR_REPORTING_THRESHOLD="3" \
+              CLOUDFLARE_API_TOKEN="${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              CLOUDFLARE_ZONE_ID="${{ secrets.CLOUDFLARE_ZONE_ID }}"
+      
+      - name: Create WebJob for scheduled updates
+        run: |
+          # Create WebJob package
+          mkdir -p webjob/App_Data/jobs/triggered/GridUpdate
+          
+          cat > webjob/App_Data/jobs/triggered/GridUpdate/run.sh << 'EOF'
+          #!/bin/bash
+          cd /home/site/wwwroot
+          php update.php
+          EOF
+          
+          cat > webjob/App_Data/jobs/triggered/GridUpdate/settings.job << 'EOF'
+          {
+            "schedule": "0 */5 * * * *"
+          }
+          EOF
+          
+          chmod +x webjob/App_Data/jobs/triggered/GridUpdate/run.sh
+          
+          # Deploy WebJob
+          cd webjob
+          zip -r ../webjob.zip .
+          cd ..
+          
+          az webapp deployment source config-zip \
+            --name ${{ env.AZURE_WEBAPP_NAME }} \
+            --resource-group ${{ secrets.AZURE_RESOURCE_GROUP }} \
+            --src webjob.zip
+      
+      - name: Verify deployment
+        run: |
+          echo "Deployment complete!"
+          echo "App URL: https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net"
+          
+          # Wait for app to be ready
+          sleep 30
+          
+          # Check if site is responding
+          curl -f https://${{ env.AZURE_WEBAPP_NAME }}.azurewebsites.net || echo "Warning: Site not responding yet"
+      
+      - name: Azure Logout
+        run: az logout
+        if: always()
