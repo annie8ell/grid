@@ -59,6 +59,9 @@ CREATE TABLE `past_five_minutes` (
   `eleclink` decimal(3,2) NOT NULL DEFAULT 0.00,
   `viking` decimal(3,2) NOT NULL DEFAULT 0.00,
   `greenlink` decimal(3,2) NOT NULL DEFAULT 0.00,
+  `domestic_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `industrial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `commercial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
   PRIMARY KEY (`time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -90,6 +93,9 @@ CREATE TABLE `past_half_hours` (
   `price` decimal(7,2) NOT NULL DEFAULT 0.00,
   `emissions` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `visits` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `domestic_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `industrial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `commercial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
   PRIMARY KEY (`time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -121,6 +127,9 @@ CREATE TABLE `past_weeks` (
   `price` decimal(7,2) NOT NULL DEFAULT 0.00,
   `emissions` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `visits` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `domestic_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `industrial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `commercial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
   PRIMARY KEY (`time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -152,6 +161,9 @@ CREATE TABLE `past_years` (
   `price` decimal(7,2) NOT NULL DEFAULT 0.00,
   `emissions` smallint(5) UNSIGNED NOT NULL DEFAULT 0,
   `visits` int(10) UNSIGNED NOT NULL DEFAULT 0,
+  `domestic_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `industrial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
+  `commercial_gas` decimal(4,2) UNSIGNED NOT NULL DEFAULT 0.00,
   PRIMARY KEY (`time`)
 ) ENGINE=MyISAM DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

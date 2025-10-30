@@ -7,6 +7,7 @@ use KateMorley\Grid\Environment;
 use KateMorley\Grid\Data\DataException;
 use KateMorley\Grid\Data\Demand;
 use KateMorley\Grid\Data\Emissions;
+use KateMorley\Grid\Data\GasConsumption;
 use KateMorley\Grid\Data\Generation;
 use KateMorley\Grid\Data\Pricing;
 use KateMorley\Grid\Data\Visits;
@@ -42,6 +43,10 @@ foreach ([
   // demand must be updated after other half-hourly data to exclude future data
   'Updating demand…     ' => function ($database) {
     Demand::update($database);
+  },
+
+  'Updating gas…        ' => function ($database) {
+    GasConsumption::update($database);
   },
 
   'Updating visits…     ' => function ($database) {

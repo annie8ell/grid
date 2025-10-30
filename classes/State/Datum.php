@@ -13,6 +13,7 @@ class Datum {
   public const TRANSFERS       = 6;
   public const DEMAND          = 7;
   public const VISITS          = 8;
+  public const GAS_CONSUMPTION = 9;
 
   public readonly Price           $price;
   public readonly Emissions       $emissions;
@@ -23,6 +24,7 @@ class Datum {
   public readonly Transfers       $transfers;
   public readonly Demand          $demand;
   public readonly Visits          $visits;
+  public readonly GasConsumption  $gasConsumption;
 
   /**
    * Constructs a new instance.
@@ -39,6 +41,7 @@ class Datum {
     $this->transfers       = new Transfers($map);
     $this->demand          = new Demand($this->types, $this->transfers);
     $this->visits          = new Visits($map);
+    $this->gasConsumption  = new GasConsumption($map);
   }
 
   /**
@@ -57,6 +60,7 @@ class Datum {
       case self::TRANSFERS       : return $this->transfers;
       case self::DEMAND          : return $this->demand;
       case self::VISITS          : return $this->visits;
+      case self::GAS_CONSUMPTION : return $this->gasConsumption;
       default                    : throw new \Exception('Invalid map type');
     }
   }
