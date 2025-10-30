@@ -2,11 +2,31 @@
 
 This guide covers deploying the National Grid: Live application to production, with specific guidance for Azure infrastructure.
 
+## Architecture Options
+
+This application supports **two deployment architectures**:
+
+### Option A: VM + Static Web App (Cost-Optimized) 🌟 **RECOMMENDED**
+- **Cost**: ~$11-43/month (48% cheaper than App Service)
+- **Best for**: Daily updates, budget-conscious deployments
+- **Components**: Single Linux VM (backend + database) + Azure Static Web App (frontend)
+- **Update frequency**: Daily at 12:15 PM (after gas data updates)
+- **Guide**: See `infrastructure/vm/README.md`
+
+### Option B: App Service + MySQL (Full Platform)
+- **Cost**: ~$83/month
+- **Best for**: Frequent updates, managed services preference
+- **Components**: Azure App Service (backend) + MySQL Flexible Server + Storage
+- **Update frequency**: Every 5 minutes
+- **Guide**: See `infrastructure/azure/README.md`
+
+**Recommendation**: Use Option A (VM + Static Web App) since gas data only updates daily, making frequent updates unnecessary.
+
 ## Table of Contents
 
 1. [Prerequisites](#prerequisites)
-2. [Quick Deployment Checklist](#quick-deployment-checklist)
-3. [Azure Deployment](#azure-deployment)
+2. [Quick Start - Cost-Optimized (VM + Static Web App)](#quick-start---cost-optimized)
+3. [Azure App Service Deployment (Alternative)](#azure-app-service-deployment)
 4. [Manual Deployment](#manual-deployment)
 5. [Database Migration](#database-migration)
 6. [Post-Deployment Verification](#post-deployment-verification)
@@ -33,14 +53,83 @@ This guide covers deploying the National Grid: Live application to production, w
 
 ---
 
-## Quick Deployment Checklist
+## Quick Start - Cost-Optimized
+
+Follow these steps for the **recommended VM + Static Web App deployment** (~$11-43/month):
+
+### 1. Deploy Azure VM with Backend
+```bash
+# Set your variables
+RESOURCE_GROUP="rg-grid-prod"
+LOCATION="eastus"
+
+# Create resource group
+az group create --name $RESOURCE_GROUP --location $LOCATION
+
+# Deploy VM (see infrastructure/vm/README.md for full details)
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file infrastructure/vm/vm-deploy.bicep \
+  --parameters environment="prod" \
+               adminUsername="gridadmin" \
+               adminSshPublicKey="$(cat ~/.ssh/id_rsa.pub)" \
+               databaseUsername="grid_user" \
+               databasePassword="YourSecurePassword123!"
+```
+
+### 2. Deploy Application Code
+```bash
+# SSH to VM
+ssh gridadmin@<VM-FQDN>
+
+# Clone and setup
+cd /opt/grid
+git clone https://github.com/annie8ell/grid.git .
+mysql grid < grid.sql
+php8.3 update.php  # Initial update
+```
+
+### 3. Deploy Azure Static Web App
+```bash
+# Deploy Static Web App
+az deployment group create \
+  --resource-group $RESOURCE_GROUP \
+  --template-file infrastructure/static-web-app/deploy.bicep \
+  --parameters environment="prod"
+
+# Configure GitHub Actions or direct deployment (see infrastructure/vm/README.md)
+```
+
+**Result**: 
+- Backend updates daily at 12:15 PM via cron
+- Public files auto-deploy to Static Web App
+- Total cost: ~$11-43/month
+- **Full setup guide**: `infrastructure/vm/README.md`
+
+---
+
+## Azure App Service Deployment
+
+For the traditional App Service approach (~$83/month), see:
+- **Full guide**: `infrastructure/azure/README.md`
+- **Bicep template**: `infrastructure/azure/main.bicep`
+- **CI/CD**: `.github/workflows/azure-deploy.yml`
+
+This approach is suitable if you need:
+- Managed services (no VM management)
+- Every-5-minute updates (though not needed with daily gas data)
+- Built-in redundancy and auto-scaling
+
+---
+
+## Quick Deployment Checklist (Manual/VPS)
 
 - [ ] Clone repository or upload files
 - [ ] Configure `.env` file with database credentials
 - [ ] Create database and import `grid.sql`
 - [ ] Apply database migration for gas columns (if upgrading)
-- [ ] Configure web server to serve `public/` directory
-- [ ] Set up cron job for `update.php` (every 5 minutes)
+- [ ] Configure web server to serve `public/` directory OR use Azure Static Web Apps
+- [ ] Set up cron job for `update.php` (daily at 12:15 PM recommended)
 - [ ] Verify write permissions on `public/` files
 - [ ] Test initial data update manually
 - [ ] Monitor error logs for 24 hours

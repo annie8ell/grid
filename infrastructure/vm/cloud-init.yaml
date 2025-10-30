@@ -1,0 +1,76 @@
+#cloud-config
+# Cloud-init configuration for National Grid: Live VM
+# Automatically sets up PHP, MariaDB, and the application
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - software-properties-common
+  - git
+  - curl
+
+runcmd:
+  # Add PHP 8.3 repository
+  - add-apt-repository ppa:ondrej/php -y
+  - apt-get update
+  
+  # Install PHP 8.3 and extensions
+  - apt-get install -y php8.3-cli php8.3-mysql php8.3-curl php8.3-xml php8.3-mbstring php8.3-zip
+  
+  # Install MariaDB
+  - apt-get install -y mariadb-server mariadb-client
+  - systemctl start mariadb
+  - systemctl enable mariadb
+  
+  # Create application directory
+  - mkdir -p /opt/grid
+  - chown ubuntu:ubuntu /opt/grid
+  
+  # Clone repository (this will be replaced with actual deployment method)
+  - |
+    cat > /opt/grid/.env <<'ENVEOF'
+    DATABASE_HOSTNAME=localhost
+    DATABASE_USERNAME=__DATABASE_USERNAME__
+    DATABASE_PASSWORD=__DATABASE_PASSWORD__
+    DATABASE_DATABASE=__DATABASE_NAME__
+    ERROR_REPORTING_THRESHOLD=3
+    ENVEOF
+  
+  # Set up database
+  - |
+    mysql -e "CREATE DATABASE IF NOT EXISTS __DATABASE_NAME__;"
+    mysql -e "CREATE USER IF NOT EXISTS '__DATABASE_USERNAME__'@'localhost' IDENTIFIED BY '__DATABASE_PASSWORD__';"
+    mysql -e "GRANT ALL PRIVILEGES ON __DATABASE_NAME__.* TO '__DATABASE_USERNAME__'@'localhost';"
+    mysql -e "FLUSH PRIVILEGES;"
+  
+  # Create log file
+  - touch /var/log/grid-update.log
+  - chown ubuntu:ubuntu /var/log/grid-update.log
+  
+  # Setup cron job for daily updates at 12:15 PM
+  - |
+    echo "15 12 * * * cd /opt/grid && /usr/bin/php8.3 update.php >> /var/log/grid-update.log 2>&1" | crontab -u ubuntu -
+
+write_files:
+  - path: /etc/motd
+    content: |
+      ===================================
+      National Grid: Live - Backend VM
+      ===================================
+      
+      Application: /opt/grid
+      Logs: /var/log/grid-update.log
+      Update schedule: Daily at 12:15 PM
+      
+      Manual update: cd /opt/grid && php8.3 update.php
+      View logs: tail -f /var/log/grid-update.log
+      
+      After deployment:
+      1. Deploy code to /opt/grid
+      2. Import schema: mysql __DATABASE_NAME__ < /opt/grid/grid.sql
+      3. Run initial update: cd /opt/grid && php8.3 update.php
+      4. Publish /opt/grid/public/ to Azure Static Web Apps
+    permissions: '0644'
+
+final_message: "National Grid: Live VM setup complete! Connect via SSH and deploy the application code."
