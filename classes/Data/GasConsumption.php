@@ -7,27 +7,44 @@ use KateMorley\Grid\Database;
 /**
  * Updates gas consumption data from UK data sources.
  *
+ * DATA SOURCE RESEARCH COMPLETED (2025-10-30):
+ * ============================================
+ * 
+ * FINDING: Real-time operational gas demand data by sector is NOT currently available
+ * through public APIs in the same format as electricity data.
+ *
  * Data Sources Evaluated:
- * 1. NESO Data Portal (https://api.neso.energy/) - RECOMMENDED
- *    - API-based access to gas demand data
- *    - CSV format, similar to electricity data (Demand.php)
- *    - Pattern: https://api.neso.energy/dataset/{dataset-id}/resource/{resource-id}/download/{file}.csv
- *    - Requires identifying specific gas demand dataset IDs
+ * 
+ * 1. NESO Data Portal (https://api.neso.energy/)
+ *    Status: ✅ Accessible, ❌ No operational gas data
+ *    - Only FES (Future Energy Scenarios) forecast data available
+ *    - 4 gas-related datasets found, all scenario/projection data
+ *    - No equivalent to electricity "Demand Data Update"
+ *    - API structure: CKAN-based, 122 total packages
  *
  * 2. National Gas (https://data.nationalgas.com/)
- *    - Download-based portal (no public API)
- *    - Daily/monthly granularity
- *    - Total system demand (limited sector breakdown)
+ *    Status: ✅ Accessible, manual download required
+ *    - Web-based data portal (not API-driven)
+ *    - Likely contains operational data
+ *    - Requires manual download or screen scraping
+ *    - May have total system demand (not sector breakdown)
  *
- * 3. DESNZ Energy Trends (https://www.gov.uk/government/statistics/gas-section-4-energy-trends)
- *    - Most comprehensive sector breakdown (Domestic, Industrial, Commercial)
- *    - Monthly/quarterly updates (too slow for real-time tracking)
- *    - Excel/CSV downloads, no API
+ * 3. DESNZ Energy Trends (https://www.gov.uk/)
+ *    Status: ✅ Accessible, monthly/quarterly updates
+ *    - Government statistical releases
+ *    - Best sector breakdown available (Domestic, Industrial, Commercial)
+ *    - Significant lag time (not suitable for real-time)
+ *    - Useful for sector ratio estimates
+ *
+ * RECOMMENDATIONS:
+ * - Short-term: Keep infrastructure ready, display unavailability notice
+ * - Medium-term: Contact NESO/National Gas about API development
+ * - Long-term: Implement estimated values using total demand + sector ratios
+ *
+ * See GAS_DATA_RESEARCH.md for complete research findings.
  *
  * Implementation Notes:
  * - Gas data typically in GWh; convert to GW for consistency
- * - Sector-specific real-time data may be limited
- * - May require estimated ratios from DESNZ statistics
  * - Excludes gas used for electricity generation (CCGT/OCGT) to avoid double-counting
  */
 class GasConsumption {
@@ -45,16 +62,40 @@ class GasConsumption {
    * @throws DataException If the data was invalid
    */
   public static function update(Database $database): void {
-    // DATA SOURCE VALIDATION STATUS:
-    // =============================
-    // Network testing completed. All three potential data sources (NESO, National Gas,
-    // DESNZ) are accessible but require specific implementation:
+    // DATA SOURCE RESEARCH COMPLETED (2025-10-30):
+    // ============================================
+    // 
+    // CRITICAL FINDING: Real-time operational gas demand data is NOT available via
+    // public APIs. NESO only publishes FES forecast/scenario data, not operational data.
     //
-    // NEXT STEPS FOR PRODUCTION:
-    // 1. Identify specific NESO gas demand dataset ID via manual portal research
-    // 2. Implement CSV parsing similar to Demand.php
-    // 3. Handle unit conversion (GWh → GW)
-    // 4. Implement sector estimation if real-time sector data unavailable
+    // CURRENT STATUS:
+    // - Infrastructure ready (database schema, state management, UI)
+    // - No real-time API data source identified
+    // - Alternative: National Gas portal (manual download)
+    // - Fallback: DESNZ sector ratios + estimated values
+    //
+    // IMPLEMENTATION OPTIONS:
+    // 
+    // Option A (Current): Placeholder with zero values
+    //   - Keep infrastructure active but display zeros
+    //   - Clear UI messaging about data availability
+    //   - Ready for immediate activation when data becomes available
+    //
+    // Option B (Estimated): Use available data with estimates
+    //   - Fetch total gas demand from National Gas (if available)
+    //   - Apply sector ratios from DESNZ statistics
+    //   - Display as "estimated" values
+    //   - Update ratios quarterly
+    //
+    // Option C (Hidden): Remove from UI until data available
+    //   - Keep database schema for future use
+    //   - Hide gas section in interface
+    //   - Re-enable when operational data source found
+    //
+    // RECOMMENDATION: Continue with Option A (current implementation)
+    // Monitor NESO and National Gas for API developments
+    //
+    // See GAS_DATA_RESEARCH.md for complete findings and recommendations.
     //
     // Example implementation pattern (when dataset ID is known):
     //
