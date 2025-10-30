@@ -272,6 +272,9 @@ img {
 .norway      { color: #2cb; }
 .pumped      { color: #09c; }
 .battery     { color: #639; }
+.domestic_gas   { color: #f72; }
+.industrial_gas { color: #a52; }
+.commercial_gas { color: #d64; }
 
 @media (prefers-color-scheme:dark) {
   .generation  { color: #888; }

@@ -21,6 +21,9 @@ const LABELS = {
   netherlands : 'Netherlands',
   norway      : 'Norway',
   pumped      : 'Pumped storage',
+  domestic_gas   : 'Domestic gas',
+  industrial_gas : 'Industrial gas',
+  commercial_gas : 'Commercial gas',
 }
 
 const KEY_MARGIN = 8
