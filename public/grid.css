@@ -863,3 +863,14 @@ polyline {
   font-weight: 400;
   text-align: left;
 }
+
+/* energy delivery note */
+
+.energy-delivery-note {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--selected-background);
+  border-left: 4px solid var(--accent);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
