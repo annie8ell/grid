@@ -101,10 +101,10 @@ resource publicIp 'Microsoft.Network/publicIPAddresses@2023-05-01' = {
   name: publicIpName
   location: location
   sku: {
-    name: 'Basic'
+    name: 'Standard'
   }
   properties: {
-    publicIPAllocationMethod: 'Dynamic'
+    publicIPAllocationMethod: 'Static'
     dnsSettings: {
       domainNameLabel: 'grid-${environment}-${uniqueString(resourceGroup().id)}'
     }
