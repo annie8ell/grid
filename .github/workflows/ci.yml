@@ -31,7 +31,7 @@ jobs:
       
       - name: Validate PHP syntax
         run: |
-          find classes -name "*.php" -exec php -l {} \; | grep -v "No syntax errors"
+          find classes -name "*.php" -exec php -l {} \;
           php -l update.php
           php -l validate_gas_sources.php
       
