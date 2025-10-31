@@ -2,6 +2,24 @@
 
 This repository contains the source code for [National Grid: Live](https://grid.iamkate.com/).
 
+## Overview
+
+This project tracks overall energy provision and consumption for the UK, providing real-time and historical data on:
+
+### Electricity Tracking
+- **Electricity generation by type**: coal, CCGT (combined cycle gas turbine), OCGT (open cycle gas turbine), nuclear, oil, wind, hydro, pumped storage, biomass, battery, and other sources
+- **Embedded generation**: solar and wind power connected to the local distribution network (rather than the national transmission network)
+- **Interconnector imports/exports**: IFA, Moyle, BritNed, EWIC, Nemo, IFA2, NSL, ElecLink, Viking, and Greenlink
+- **Electricity pricing**: wholesale electricity prices from the APX spot market
+- **Carbon emissions**: carbon intensity of electricity generation in grams of CO₂ per kilowatt-hour
+
+### Gas Consumption Tracking
+- **Direct gas consumption by sector**: domestic (heating, cooking), industrial, and commercial
+- Gas consumption is tracked separately from gas-fired electricity generation (CCGT/OCGT) to avoid double-counting
+
+### Data Updates
+The application updates every 5 minutes via a cron job running `update.php`, fetching the latest data from multiple sources and aggregating it across different time periods.
+
 ## Development
 
 The development environment uses [Docker](https://www.docker.com/).
@@ -42,6 +60,22 @@ Upload `.env`, `update.php`, and the `classes` and `public` directories to the s
 
 Create a database and a user with `SELECT`, `INSERT`, `UPDATE`, and `DELETE` privileges, and import `grid.sql` into the database.
 
+#### Database Schema
+
+The database stores time-series data in 5 tables with different granularities:
+- `past_five_minutes` - 5-minute electricity generation data
+- `past_half_hours` - 30-minute data (electricity generation, embedded generation, emissions, pricing, gas consumption)
+- `past_days` - Daily aggregated data
+- `past_weeks` - Weekly aggregated data
+- `past_years` - Yearly aggregated data
+
+Each table includes columns for:
+- Electricity generation by type (coal, CCGT, OCGT, nuclear, oil, wind, hydro, pumped storage, biomass, battery, other)
+- Embedded generation (solar and wind)
+- Interconnector transfers (IFA, Moyle, BritNed, EWIC, Nemo, IFA2, NSL, ElecLink, Viking, Greenlink)
+- Gas consumption by sector (domestic, industrial, commercial)
+- Pricing and emissions data (where applicable)
+
 ### Web server
 
 Configure the server to serve the contents of the `public` directory. Note that this directory contains only static files, so the web server does not need to support PHP.
@@ -72,7 +106,9 @@ The [UI](classes/UI) namespace contains classes that output the user interface. 
 
 ## Data sources
 
-### [Elexon Insights Solution](https://bmrs.elexon.co.uk/)
+### Electricity Data
+
+#### [Elexon Insights Solution](https://bmrs.elexon.co.uk/)
 
 This API, developed by Elexon, reports power generation connected to the national transmission network, interconnector imports and exports, and pricing.
 
@@ -80,7 +116,7 @@ Data is available in JSON format at 30-minute or 5-minute granularity.
 
 PHP classes: [Generation](classes/Data/Generation.php), [Pricing](classes/Data/Pricing.php)
 
-### [National Energy System Operator Data Portal](https://www.neso.energy/data-portal)
+#### [National Energy System Operator Data Portal](https://www.neso.energy/data-portal)
 
 This API, developed by the National Energy System Operator, estimates power generation from embedded solar and wind (generation connected to the local distribution network rather than the national transmission network).
 
@@ -88,13 +124,66 @@ Data is available in CSV format at 30-minute granularity. Estimates may be retro
 
 PHP class: [Demand](classes/Data/Demand.php)
 
-### [Carbon Intensity API](https://carbonintensity.org.uk/)
+#### [Carbon Intensity API](https://carbonintensity.org.uk/)
 
 This API, developed by the National Energy System Operator and the University Of Oxford Department Of Computer Science, estimates the carbon intensity of electricity generation in grams of carbon dioxide per kilowatt-hour.
 
 Data is available in JSON format at 30-minute granularity. Estimates may be retrospectively updated.
 
 PHP class: [Emissions](classes/Data/Emissions.php)
+
+### Gas Consumption Data
+
+#### Gas Data Sources (Research Completed - Data Availability Limited)
+
+Gas consumption data infrastructure has been added to the database schema and backend. **Comprehensive research completed 2025-10-30:**
+
+**Key Finding:**
+**Real-time operational gas demand data by sector is NOT currently available through public APIs.** Unlike electricity data, gas consumption data is not published in real-time with the same granularity and format.
+
+**Data Sources Evaluated:**
+
+1. **[NESO Data Portal](https://www.neso.energy/data-portal)** (https://api.neso.energy/)
+   - ✅ API accessible and validated
+   - ❌ Only FES (Future Energy Scenarios) forecast data available
+   - 4 gas-related datasets found, all scenario/projection data (not operational)
+   - No equivalent to electricity "Demand Data Update"
+
+2. **[National Gas Data Portal](https://data.nationalgas.com/)**
+   - ✅ Accessible via web interface
+   - ❌ No public API for automated access
+   - Requires manual download or screen scraping
+   - May contain total system demand (sector breakdown uncertain)
+
+3. **[DESNZ Energy Trends](https://www.gov.uk/government/statistics/gas-section-4-energy-trends)**
+   - ✅ Most comprehensive sector breakdown (Domestic, Industrial, Commercial)
+   - ❌ Monthly/quarterly updates with significant lag
+   - Useful for historical analysis and sector ratio estimates
+   - Not suitable for real-time tracking
+
+**Current Status:**
+- Database schema ready with `domestic_gas`, `industrial_gas`, `commercial_gas` columns
+- Backend infrastructure implemented and tested
+- UI prepared to display gas consumption
+- **Data source**: Awaiting availability of real-time API data
+
+**Implementation Approach:**
+- Infrastructure remains active (Option A: Placeholder)
+- Gas section displays with clear messaging about data availability
+- Database columns default to 0.00 (no errors)
+- Ready for immediate activation when data becomes available
+
+**Next Steps:**
+- Monitor NESO and National Gas for API developments
+- Consider contacting providers about publishing operational data
+- Explore estimated values approach using total demand + sector ratios
+
+**Research Documentation:**
+See [GAS_DATA_RESEARCH.md](GAS_DATA_RESEARCH.md) for complete research findings, technical details, and recommendations.
+
+Gas consumption is tracked separately from gas-fired electricity generation (CCGT/OCGT) to prevent double-counting.
+
+PHP class: [GasConsumption](classes/Data/GasConsumption.php) (infrastructure complete, awaiting data source)
 
 ## Future plans
 

@@ -1,0 +1,97 @@
+#cloud-config
+# Cloud-init configuration for National Grid: Live VM
+# Automatically sets up PHP, MariaDB, and the application
+
+package_update: true
+package_upgrade: true
+
+packages:
+  - software-properties-common
+  - git
+  - curl
+  - nodejs
+  - npm
+
+runcmd:
+  # Add PHP 8.3 repository
+  - add-apt-repository ppa:ondrej/php -y
+  - apt-get update
+  
+  # Install PHP 8.3 and extensions
+  - apt-get install -y php8.3-cli php8.3-mysql php8.3-curl php8.3-xml php8.3-mbstring php8.3-zip
+  
+  # Install MariaDB
+  - apt-get install -y mariadb-server mariadb-client
+  - systemctl start mariadb
+  - systemctl enable mariadb
+  
+  # Install Node.js 20.x and SWA CLI
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  - npm install -g @azure/static-web-apps-cli
+  
+  # Create application directory with correct ownership
+  - mkdir -p /opt/grid
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /opt/grid
+  
+  # Clone repository
+  - sudo -u __ADMIN_USERNAME__ git clone https://github.com/annie8ell/grid.git /opt/grid
+  
+  # Create .env file
+  - |
+    cat > /opt/grid/.env <<'ENVEOF'
+    DATABASE_HOSTNAME=localhost
+    DATABASE_USERNAME=__DATABASE_USERNAME__
+    DATABASE_PASSWORD=__DATABASE_PASSWORD__
+    DATABASE_DATABASE=__DATABASE_NAME__
+    ERROR_REPORTING_THRESHOLD=3
+    CLOUDFLARE_API_TOKEN=
+    CLOUDFLARE_ZONE_ID=
+    ENVEOF
+  
+  # Fix .env ownership
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /opt/grid/.env
+  
+  # Set up database
+  - |
+    mysql -e "CREATE DATABASE IF NOT EXISTS __DATABASE_NAME__;"
+    mysql -e "CREATE USER IF NOT EXISTS '__DATABASE_USERNAME__'@'localhost' IDENTIFIED BY '__DATABASE_PASSWORD__';"
+    mysql -e "GRANT ALL PRIVILEGES ON __DATABASE_NAME__.* TO '__DATABASE_USERNAME__'@'localhost';"
+    mysql -e "FLUSH PRIVILEGES;"
+  
+  # Import database schema
+  - mysql __DATABASE_NAME__ < /opt/grid/grid.sql
+  
+  # Create log file
+  - touch /var/log/grid-update.log
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /var/log/grid-update.log
+  
+  # Run initial update
+  - sudo -u __ADMIN_USERNAME__ bash -c 'cd /opt/grid && php8.3 update.php >> /var/log/grid-update.log 2>&1'
+  
+  # Setup cron job for daily updates at 12:15 PM
+  - |
+    echo "15 12 * * * cd /opt/grid && /usr/bin/php8.3 update.php >> /var/log/grid-update.log 2>&1" | crontab -u __ADMIN_USERNAME__ -
+
+write_files:
+  - path: /etc/motd
+    content: |
+      ===================================
+      National Grid: Live - Backend VM
+      ===================================
+      
+      Application: /opt/grid
+      Logs: /var/log/grid-update.log
+      Update schedule: Daily at 12:15 PM UTC
+      
+      Manual update: cd /opt/grid && php8.3 update.php
+      View logs: tail -f /var/log/grid-update.log
+      
+      The application is fully configured and running.
+      To deploy to Static Web App, retrieve the token:
+        az staticwebapp secrets list -g <RESOURCE_GROUP> -n <SWA_NAME> --query properties.apiKey -o tsv
+      Then deploy:
+        cd /opt/grid && swa deploy ./public --deployment-token <TOKEN> --env production
+    permissions: '0644'
+
+final_message: "National Grid: Live VM setup complete! Application deployed and initial update run."

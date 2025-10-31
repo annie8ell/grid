@@ -3,3 +3,6 @@
 /public/index.html
 /public/proza-light.woff2
 /public/proza-regular.woff2
+
+# Local deployment notes containing secrets (do not commit)
+DEPLOYMENT_INFO.md

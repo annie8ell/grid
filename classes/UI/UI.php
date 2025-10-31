@@ -60,7 +60,7 @@ class UI {
           National Grid: Live
         </h1>
         <p>
-          The National Grid is the electric power transmission network for Great Britain
+          The National Grid is the electric power transmission network for Great Britain. This site also tracks direct gas consumption by domestic households and industry.
         </p>
       </section>
       <div id="status" class="columns">

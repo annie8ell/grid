@@ -231,7 +231,7 @@ class Database {
         ',',
         array_map(
           fn ($column) => $column . '=' . $previousHalfHour[$column],
-          array_merge(Demand::KEYS, Pricing::KEYS, Emissions::KEYS)
+          array_merge(Demand::KEYS, Pricing::KEYS, Emissions::KEYS, \KateMorley\Grid\Data\GasConsumption::KEYS)
         )
       )
       . ' WHERE time>"'
@@ -419,7 +419,8 @@ class Database {
       Generation::KEYS,
       Pricing::KEYS,
       Emissions::KEYS,
-      Visits::KEYS
+      Visits::KEYS,
+      \KateMorley\Grid\Data\GasConsumption::KEYS
     );
   }
 

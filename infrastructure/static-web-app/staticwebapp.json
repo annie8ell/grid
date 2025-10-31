@@ -1,0 +1,38 @@
+{
+  "routes": [
+    {
+      "route": "/*",
+      "allowedRoles": ["authenticated"]
+    }
+  ],
+  "responseOverrides": {
+    "401": {
+      "statusCode": 401,
+      "rewrite": "/.auth/login/basic"
+    }
+  },
+  "auth": {
+    "identityProviders": {
+      "customOpenIdConnectProviders": {}
+    }
+  },
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["*.{css,js,png,svg,jpg,jpeg,gif,ico,woff,woff2,json,txt}"]
+  },
+  "mimeTypes": {
+    ".html": "text/html; charset=utf-8",
+    ".css": "text/css; charset=utf-8",
+    ".js": "text/javascript; charset=utf-8",
+    ".json": "application/json; charset=utf-8",
+    ".png": "image/png",
+    ".svg": "image/svg+xml",
+    ".txt": "text/plain"
+  },
+  "globalHeaders": {
+    "cache-control": "public, max-age=3600, must-revalidate"
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  }
+}

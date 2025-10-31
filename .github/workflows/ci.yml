@@ -1,0 +1,124 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint-and-test:
+    name: Lint and Test PHP
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        php-version: ['8.3']
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          extensions: mysqli, mbstring
+          coverage: none
+      
+      - name: Check PHP version
+        run: php -v
+      
+      - name: Validate PHP syntax
+        run: |
+          find classes -name "*.php" -exec php -l {} \;
+          php -l update.php
+          php -l validate_gas_sources.php
+      
+      - name: Run validation script
+        run: php validate_gas_sources.php
+      
+      - name: Check for required files
+        run: |
+          test -f grid.sql
+          test -f update.php
+          test -f .env.example
+          test -f README.md
+          test -f DEPLOYMENT.md
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      security-events: write
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript, php
+      
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  validate-docker:
+    name: Validate Docker Setup
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      - name: Validate Dockerfile
+        run: docker build --target php -t grid-php .
+      
+      - name: Validate docker-compose
+        run: |
+          cp .env.example .env
+          echo "DATABASE_PASSWORD=test123" >> .env
+          docker compose config
+
+  validate-schema:
+    name: Validate Database Schema
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mariadb:latest
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: grid_test
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+        ports:
+          - 3306:3306
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Wait for MySQL
+        run: sleep 10
+      
+      - name: Import schema
+        run: |
+          mysql -h 127.0.0.1 -u root -proot grid_test < grid.sql
+      
+      - name: Verify tables exist
+        run: |
+          mysql -h 127.0.0.1 -u root -proot grid_test -e "SHOW TABLES;"
+      
+      - name: Verify gas columns exist
+        run: |
+          mysql -h 127.0.0.1 -u root -proot grid_test -e "SHOW COLUMNS FROM past_half_hours LIKE '%gas%';"
+          mysql -h 127.0.0.1 -u root -proot grid_test -e "SHOW COLUMNS FROM past_days LIKE '%gas%';"
