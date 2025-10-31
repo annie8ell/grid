@@ -1,18 +1,24 @@
 {
   "routes": [
     {
-      "route": "/",
-      "serve": "/index.html",
-      "statusCode": 200
-    },
-    {
       "route": "/*",
-      "serve": "/index.html",
-      "statusCode": 200
+      "allowedRoles": ["authenticated"]
     }
   ],
+  "responseOverrides": {
+    "401": {
+      "statusCode": 401,
+      "rewrite": "/.auth/login/basic"
+    }
+  },
+  "auth": {
+    "identityProviders": {
+      "customOpenIdConnectProviders": {}
+    }
+  },
   "navigationFallback": {
-    "rewrite": "/index.html"
+    "rewrite": "/index.html",
+    "exclude": ["*.{css,js,png,svg,jpg,jpeg,gif,ico,woff,woff2,json,txt}"]
   },
   "mimeTypes": {
     ".html": "text/html; charset=utf-8",
@@ -26,10 +32,7 @@
   "globalHeaders": {
     "cache-control": "public, max-age=3600, must-revalidate"
   },
-  "responseOverrides": {
-    "404": {
-      "rewrite": "/index.html",
-      "statusCode": 200
-    }
+  "platform": {
+    "apiRuntime": "node:18"
   }
 }

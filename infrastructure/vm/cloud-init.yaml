@@ -9,6 +9,8 @@ packages:
   - software-properties-common
   - git
   - curl
+  - nodejs
+  - npm
 
 runcmd:
   # Add PHP 8.3 repository
@@ -23,11 +25,19 @@ runcmd:
   - systemctl start mariadb
   - systemctl enable mariadb
   
-  # Create application directory
-  - mkdir -p /opt/grid
-  - chown ubuntu:ubuntu /opt/grid
+  # Install Node.js 20.x and SWA CLI
+  - curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+  - apt-get install -y nodejs
+  - npm install -g @azure/static-web-apps-cli
   
-  # Clone repository (this will be replaced with actual deployment method)
+  # Create application directory with correct ownership
+  - mkdir -p /opt/grid
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /opt/grid
+  
+  # Clone repository
+  - sudo -u __ADMIN_USERNAME__ git clone https://github.com/annie8ell/grid.git /opt/grid
+  
+  # Create .env file
   - |
     cat > /opt/grid/.env <<'ENVEOF'
     DATABASE_HOSTNAME=localhost
@@ -35,7 +45,12 @@ runcmd:
     DATABASE_PASSWORD=__DATABASE_PASSWORD__
     DATABASE_DATABASE=__DATABASE_NAME__
     ERROR_REPORTING_THRESHOLD=3
+    CLOUDFLARE_API_TOKEN=
+    CLOUDFLARE_ZONE_ID=
     ENVEOF
+  
+  # Fix .env ownership
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /opt/grid/.env
   
   # Set up database
   - |
@@ -44,13 +59,19 @@ runcmd:
     mysql -e "GRANT ALL PRIVILEGES ON __DATABASE_NAME__.* TO '__DATABASE_USERNAME__'@'localhost';"
     mysql -e "FLUSH PRIVILEGES;"
   
+  # Import database schema
+  - mysql __DATABASE_NAME__ < /opt/grid/grid.sql
+  
   # Create log file
   - touch /var/log/grid-update.log
-  - chown ubuntu:ubuntu /var/log/grid-update.log
+  - chown __ADMIN_USERNAME__:__ADMIN_USERNAME__ /var/log/grid-update.log
+  
+  # Run initial update
+  - sudo -u __ADMIN_USERNAME__ bash -c 'cd /opt/grid && php8.3 update.php >> /var/log/grid-update.log 2>&1'
   
   # Setup cron job for daily updates at 12:15 PM
   - |
-    echo "15 12 * * * cd /opt/grid && /usr/bin/php8.3 update.php >> /var/log/grid-update.log 2>&1" | crontab -u ubuntu -
+    echo "15 12 * * * cd /opt/grid && /usr/bin/php8.3 update.php >> /var/log/grid-update.log 2>&1" | crontab -u __ADMIN_USERNAME__ -
 
 write_files:
   - path: /etc/motd
@@ -61,16 +82,16 @@ write_files:
       
       Application: /opt/grid
       Logs: /var/log/grid-update.log
-      Update schedule: Daily at 12:15 PM
+      Update schedule: Daily at 12:15 PM UTC
       
       Manual update: cd /opt/grid && php8.3 update.php
       View logs: tail -f /var/log/grid-update.log
       
-      After deployment:
-      1. Deploy code to /opt/grid
-      2. Import schema: mysql __DATABASE_NAME__ < /opt/grid/grid.sql
-      3. Run initial update: cd /opt/grid && php8.3 update.php
-      4. Publish /opt/grid/public/ to Azure Static Web Apps
+      The application is fully configured and running.
+      To deploy to Static Web App, retrieve the token:
+        az staticwebapp secrets list -g <RESOURCE_GROUP> -n <SWA_NAME> --query properties.apiKey -o tsv
+      Then deploy:
+        cd /opt/grid && swa deploy ./public --deployment-token <TOKEN> --env production
     permissions: '0644'
 
-final_message: "National Grid: Live VM setup complete! Connect via SSH and deploy the application code."
+final_message: "National Grid: Live VM setup complete! Application deployed and initial update run."

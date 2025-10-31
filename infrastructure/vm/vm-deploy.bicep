@@ -158,7 +158,7 @@ resource vm 'Microsoft.Compute/virtualMachines@2023-07-01' = {
           ]
         }
       }
-      customData: base64(replace(replace(replace(loadTextContent('cloud-init.yaml'), '__DATABASE_USERNAME__', databaseUsername), '__DATABASE_PASSWORD__', databasePassword), '__DATABASE_NAME__', databaseName))
+      customData: base64(replace(replace(replace(replace(loadTextContent('cloud-init.yaml'), '__ADMIN_USERNAME__', adminUsername), '__DATABASE_USERNAME__', databaseUsername), '__DATABASE_PASSWORD__', databasePassword), '__DATABASE_NAME__', databaseName))
     }
     storageProfile: {
       imageReference: {
